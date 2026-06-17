@@ -1,12 +1,3 @@
-"""
-Логістичний HR-бот для TG Ads
-Стек: python-telegram-bot v20+
-Встановлення: pip install python-telegram-bot==20.7
-
-Запуск: python logistics_bot.py
-Env: BOT_TOKEN і MANAGER_CHAT_ID в .env або задай напряму нижче
-"""
-
 import logging
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -15,11 +6,10 @@ from telegram.ext import (
     MessageHandler, filters, ContextTypes, ConversationHandler
 )
 
-# ─── CONFIG ────────────────────────────────────────────────────────────────────
 BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВИТИ_ТОКЕН")
 MANAGER_CHAT_ID = os.getenv("MANAGER_CHAT_ID", "ВСТАВИТИ_CHAT_ID_МЕНЕДЖЕРА")
 
-COMPANY_NAME = "ТрансГрупп"
+COMPANY_NAME = "ТрансРФ"
 COMPANY_DESC = "Федеральная транспортная компания. Работаем с 2015 года, 12 региональных офисов."
 
 VACANCIES = {
@@ -91,14 +81,12 @@ VACANCIES = {
     },
 }
 
-# ─── STATES ────────────────────────────────────────────────────────────────────
 CHOOSING_VACANCY, VACANCY_DETAIL, ASK_CITY, ASK_EXPERIENCE, ASK_PHONE = range(5)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# ─── KEYBOARDS ─────────────────────────────────────────────────────────────────
 def vacancies_keyboard():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(f"🚚 {v['title']}", callback_data=k)]
@@ -113,7 +101,6 @@ def vacancy_action_keyboard(vac_id):
     ])
 
 
-# ─── HANDLERS ──────────────────────────────────────────────────────────────────
 async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     text = (
@@ -213,7 +200,6 @@ async def got_phone(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     vac_id = ctx.user_data.get("selected_vacancy", "—")
     vac = VACANCIES.get(vac_id, {})
 
-    # Повідомлення менеджеру
     manager_text = (
         f"📥 <b>Новая заявка</b>\n\n"
         f"👤 {user.full_name} (@{user.username or '—'})\n"
@@ -262,7 +248,6 @@ async def cancel(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-# ─── MAIN ──────────────────────────────────────────────────────────────────────
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
@@ -270,7 +255,10 @@ def main():
         entry_points=[CommandHandler("start", start)],
         states={
             CHOOSING_VACANCY: [CallbackQueryHandler(show_vacancy)],
-            VACANCY_DETAIL: [CallbackQueryHandler(show_vacancy)],
+            VACANCY_DETAIL: [
+                CallbackQueryHandler(apply_start, pattern="^apply_"),
+                CallbackQueryHandler(show_vacancy),
+            ],
             ASK_CITY: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_city)],
             ASK_EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_experience)],
             ASK_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_phone)],
