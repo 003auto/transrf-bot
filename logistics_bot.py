@@ -78,18 +78,6 @@ async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     return CHOOSING_VACANCY
 
 
-async def show_vacancies_entry(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Entry point через кнопку після завершення заявки"""
-    query = update.callback_query
-    await query.answer()
-    ctx.user_data.clear()
-    user = query.from_user
-    await query.message.reply_text(
-        f"Здравствуйте, {user.first_name}! 👋\n\n"
-        f"Актуальные вакансии компании <b>{COMPANY_NAME}</b>. Выберите интересующую:",
-        parse_mode="HTML", reply_markup=vacancies_keyboard()
-    )
-    return CHOOSING_VACANCY
 
 
 async def show_vacancy(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -283,15 +271,8 @@ async def got_call_time(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(
         "✅ Заявка принята!\n\n"
         "Наш HR-менеджер рассмотрит вашу кандидатуру и свяжется с вами "
-        "в удобное для вас время (пн–пт, 9:00–18:00 МСК).",
-    )
-    # Нове повідомлення — стане новим entry_point для ConversationHandler
-    await ctx.bot.send_message(
-        chat_id=query.message.chat_id,
-        text="Хотите рассмотреть другие вакансии?",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("📋 Посмотреть другие вакансии", callback_data="show_vacancies")]
-        ])
+        "в удобное для вас время (пн–пт, 9:00–18:00 МСК).\n\n"
+        "Чтобы вернуться в меню — нажмите /start"
     )
     return ConversationHandler.END
 
@@ -308,8 +289,6 @@ def main():
     conv = ConversationHandler(
         entry_points=[
             CommandHandler("start", start),
-            # Кнопка "Посмотреть другие вакансии" після завершення заявки
-            CallbackQueryHandler(show_vacancies_entry, pattern="^show_vacancies$"),
         ],
         states={
             CHOOSING_VACANCY: [CallbackQueryHandler(show_vacancy)],
