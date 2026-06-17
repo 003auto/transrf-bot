@@ -296,7 +296,10 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     conv = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            CommandHandler("cancel", cancel),
+        ],
         states={
             CHOOSING_VACANCY: [CallbackQueryHandler(show_vacancy)],
             VACANCY_DETAIL: [
@@ -313,6 +316,7 @@ def main():
             ASK_CALL_TIME:  [CallbackQueryHandler(got_call_time, pattern="^time_")],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
+        allow_reentry=True,
     )
 
     app.add_handler(conv)
