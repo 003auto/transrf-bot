@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler,
@@ -81,10 +82,16 @@ VACANCIES = {
     },
 }
 
-CHOOSING_VACANCY, VACANCY_DETAIL, ASK_CITY, ASK_EXPERIENCE, ASK_PHONE = range(5)
+CHOOSING_VACANCY, VACANCY_DETAIL, ASK_CITY, ASK_EXPERIENCE, ASK_PHONE, ASK_USERNAME = range(6)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def is_valid_ru_phone(phone: str) -> bool:
+    """Валідація РФ номера: +7XXXXXXXXXX або 8XXXXXXXXXX або 7XXXXXXXXXX"""
+    cleaned = re.sub(r'[\s\-\(\)]', '', phone)
+    return bool(re.match(r'^(\+7|8|7)\d{10}$', cleaned))
 
 
 def vacancies_keyboard():
@@ -188,21 +195,47 @@ async def got_city(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 async def got_experience(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     ctx.user_data["experience"] = update.message.text
     await update.message.reply_text(
-        "Почти готово! 📞\n\n"
-        "Укажите ваш номер телефона — наш HR-менеджер свяжется с вами в течение рабочего дня."
+        "📞 Укажите ваш номер телефона в формате +7XXXXXXXXXX или 8XXXXXXXXXX\n\n"
+        "Наш HR-менеджер свяжется с вами в течение рабочего дня."
     )
     return ASK_PHONE
 
 
 async def got_phone(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    ctx.user_data["phone"] = update.message.text
+    phone = update.message.text
+
+    if not is_valid_ru_phone(phone):
+        await update.message.reply_text(
+            "⚠️ Пожалуйста, укажите российский номер телефона.\n\n"
+            "Формат: +7XXXXXXXXXX или 8XXXXXXXXXX"
+        )
+        return ASK_PHONE
+
+    ctx.user_data["phone"] = phone
+    await update.message.reply_text(
+        "И последнее — укажите ваш username в Telegram (например @ivanov)\n\n"
+        "Это позволит менеджеру написать вам напрямую, если не дозвонится."
+    )
+    return ASK_USERNAME
+
+
+async def got_username(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    username_input = update.message.text.strip()
     user = update.effective_user
+
+    # Беремо або те що написав, або з профілю
+    tg_username = username_input if username_input != "—" else (
+        f"@{user.username}" if user.username else "не указан"
+    )
+    ctx.user_data["tg_username"] = tg_username
+
     vac_id = ctx.user_data.get("selected_vacancy", "—")
     vac = VACANCIES.get(vac_id, {})
 
     manager_text = (
         f"📥 <b>Новая заявка</b>\n\n"
-        f"👤 {user.full_name} (@{user.username or '—'})\n"
+        f"👤 {user.full_name}\n"
+        f"📱 TG: {tg_username}\n"
         f"🆔 ID: {user.id}\n\n"
         f"🚚 Вакансия: {vac.get('title', vac_id)}\n"
         f"📍 Город: {ctx.user_data.get('city', '—')}\n"
@@ -262,6 +295,7 @@ def main():
             ASK_CITY: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_city)],
             ASK_EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_experience)],
             ASK_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_phone)],
+            ASK_USERNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_username)],
         },
         fallbacks=[
             CommandHandler("cancel", cancel),
