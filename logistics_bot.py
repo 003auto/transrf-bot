@@ -10,30 +10,30 @@ from telegram.ext import (
 BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВИТИ_ТОКЕН")
 MANAGER_CHAT_ID = os.getenv("MANAGER_CHAT_ID", "ВСТАВИТИ_CHAT_ID_МЕНЕДЖЕРА")
 
-COMPANY_NAME = "ТрансРФ"
-COMPANY_DESC = "Федеральная транспортная компания. Работаем с 2015 года, 12 региональных офисов."
+COMPANY_NAME = "КурьерПро"
+COMPANY_DESC = "Сервис курьерской доставки. Работаем по всему городу, выплаты каждую неделю."
 
 VACANCIES = {
     "v1": {
-        "title": "Специалист по сопровождению грузоперевозок",
-        "salary": "от 65 000 ₽", "schedule": "5/2, гибкое начало дня", "location": "Москва",
-        "duties": "• Организация и сопровождение процессов грузоперевозок\n• Работа с утверждёнными маршрутами\n• Контроль состояния груза на всех этапах",
-        "requirements": "• Понимание устройства автомобиля\n• Грамотная устная и письменная речь\n• Стрессоустойчивость, ответственность",
-        "conditions": "• Фиксированный оклад + прозрачная бонусная система\n• Официальное оформление с первого дня\n• Обучение и адаптация на старте\n• Стабильные выплаты без задержек",
+        "title": "Пеший курьер",
+        "salary": "3 500–6 000 ₽ за смену", "schedule": "Гибкий, смены 8–10 часов", "location": "Москва",
+        "duties": "• Доставка заказов пешком в пределах района\n• Приём и передача посылок по маршруту\n• Подтверждение доставки через приложение",
+        "requirements": "• Без опыта — обучаем\n• Смартфон с навигацией\n• Ответственность и пунктуальность",
+        "conditions": "• 3 500–6 000 ₽ за смену 8–10 часов\n• Выплаты каждую неделю\n• Гибкий выбор смен через приложение\n• Оформление с первого дня",
     },
     "v2": {
-        "title": "Координатор транспортных процессов",
-        "salary": "от 70 000 ₽", "schedule": "5/2", "location": "Москва",
-        "duties": "• Координация водителей и транспортных бригад\n• Согласование маршрутов и сроков доставки\n• Взаимодействие с клиентами по статусу заказов",
-        "requirements": "• Опыт в логистике или транспорте от 6 месяцев\n• Умение работать в режиме многозадачности\n• Уверенный пользователь ПК",
-        "conditions": "• Оклад + KPI-бонус\n• Официальное трудоустройство\n• Корпоративная связь\n• Карьерный рост внутри компании",
+        "title": "Велокурьер / электровелосипед",
+        "salary": "4 500–8 000 ₽ за смену", "schedule": "Гибкий, смены 8–10 часов", "location": "Москва",
+        "duties": "• Доставка заказов на велосипеде или электровелосипеде\n• Работа по оптимизированным маршрутам\n• Подтверждение доставки через приложение",
+        "requirements": "• Свой велосипед или электровелосипед\n• Умение уверенно ездить в городе\n• Смартфон с навигацией",
+        "conditions": "• 4 500–8 000 ₽ за смену, в пиковые дни выше\n• Выплаты каждую неделю\n• Гибкий выбор смен\n• Оформление с первого дня",
     },
     "v3": {
-        "title": "Оператор транспортного отдела",
-        "salary": "от 58 000 ₽", "schedule": "5/2 или 2/2 (на выбор)", "location": "Москва",
-        "duties": "• Приём и обработка заявок на перевозку\n• Ведение реестра рейсов и документации\n• Коммуникация с водителями и клиентами",
-        "requirements": "• Без опыта — обучаем\n• Внимательность, аккуратность\n• Желание развиваться в логистике",
-        "conditions": "• Стабильный оклад\n• Полное обучение за счёт компании\n• Официальное оформление\n• Молодой дружный коллектив",
+        "title": "Автокурьер",
+        "salary": "5 000–9 000 ₽ за смену", "schedule": "Гибкий, смены 8–10 часов", "location": "Москва",
+        "duties": "• Доставка заказов на личном автомобиле\n• Работа по маршрутам с несколькими точками\n• Подтверждение доставки через приложение",
+        "requirements": "• Личный автомобиль и водительское удостоверение кат. B\n• Опыт вождения в городе\n• Смартфон с навигацией",
+        "conditions": "• 5 000–9 000 ₽ за смену, при высокой загрузке больше\n• Компенсация топлива\n• Выплаты каждую неделю\n• Оформление с первого дня",
     },
 }
 
@@ -52,8 +52,9 @@ def is_valid_ru_phone(phone: str) -> bool:
 
 
 def vacancies_keyboard():
+    icons = {"v1": "🚶", "v2": "🚴", "v3": "🚗"}
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"🚚 {v['title']}", callback_data=k)]
+        [InlineKeyboardButton(f"{icons.get(k,'📦')} {v['title']}", callback_data=k)]
         for k, v in VACANCIES.items()
     ] + [[InlineKeyboardButton("ℹ️ О компании", callback_data="about")]])
 
@@ -87,10 +88,10 @@ async def show_vacancy(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if query.data == "about":
         await query.edit_message_text(
             f"<b>О компании {COMPANY_NAME}</b>\n\n{COMPANY_DESC}\n\n"
-            "• Официальное трудоустройство по ТК РФ\n"
-            "• Своевременная выплата заработной платы\n"
-            "• Развитая система обучения и адаптации\n"
-            "• Представительства в 12 городах России",
+            "• Официальное оформление с первого дня\n"
+            "• Выплаты каждую неделю без задержек\n"
+            "• Гибкий выбор смен через приложение\n"
+            "• Работа по всему городу",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("← Все вакансии", callback_data="back")]])
         )
@@ -158,54 +159,78 @@ async def got_employment(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     emp_map = {
-        "emp_full": "Полная занятость 5/2",
-        "emp_shift": "Сменный график 2/2",
+        "emp_full": "Полная занятость",
+        "emp_shift": "Сменный график",
         "emp_part": "Подработка / частичная",
     }
     ctx.user_data["employment"] = emp_map.get(query.data, "—")
-    await query.edit_message_text(
-        "Готовы ли вы к командировкам или работе в другом городе?",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Да, готов", callback_data="rel_yes")],
-            [InlineKeyboardButton("Только свой город", callback_data="rel_no")],
-        ])
-    )
-    return ASK_RELOCATION
+    vac_id = ctx.user_data.get("selected_vacancy", "")
+    if vac_id == "v2":
+        await query.edit_message_text(
+            "🚴 Есть ли у вас свой велосипед или электровелосипед?",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Да, велосипед", callback_data="exp_bike")],
+                [InlineKeyboardButton("Да, электровелосипед", callback_data="exp_ebike")],
+                [InlineKeyboardButton("Нет", callback_data="exp_none")],
+            ])
+        )
+    else:
+        await query.edit_message_text(
+            "Есть ли у вас опыт работы курьером?\n\n"
+            "Напишите коротко: например «есть, 6 месяцев» или «нет, готов начать»"
+        )
+    return ASK_EXPERIENCE
 
 
 async def got_relocation(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    # Not used for couriers — kept for compatibility
     query = update.callback_query
     await query.answer()
-    ctx.user_data["relocation"] = "Да" if query.data == "rel_yes" else "Только свой город"
+    ctx.user_data["relocation"] = "—"
     await query.edit_message_text(
-        "Есть ли у вас опыт работы в логистике или транспортной сфере?\n\n"
-        "Напишите коротко: например «есть, 2 года» или «нет, готов обучаться»"
+        "Есть ли у вас опыт работы курьером?\n\n"
+        "Напишите коротко: например «есть, 6 месяцев» или «нет, готов начать»"
     )
     return ASK_EXPERIENCE
 
 
 async def got_experience(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    ctx.user_data["experience"] = update.message.text
-    await update.message.reply_text(
-        "🚗 Есть ли у вас водительское удостоверение? Выберите категорию:",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("B", callback_data="lic_B"),
-             InlineKeyboardButton("C", callback_data="lic_C"),
-             InlineKeyboardButton("D", callback_data="lic_D")],
-            [InlineKeyboardButton("B+C", callback_data="lic_BC"),
-             InlineKeyboardButton("C+E", callback_data="lic_CE")],
-            [InlineKeyboardButton("Нет прав", callback_data="lic_none")],
-        ])
-    )
-    return ASK_LICENSE
+    # Handle both callback (bike selection) and text message
+    if update.callback_query:
+        query = update.callback_query
+        await query.answer()
+        bike_map = {"exp_bike": "Велосипед", "exp_ebike": "Электровелосипед", "exp_none": "Нет своего транспорта"}
+        ctx.user_data["experience"] = bike_map.get(query.data, "—")
+        await query.edit_message_text(
+            "📞 Укажите ваш номер телефона в формате +7XXXXXXXXXX или 8XXXXXXXXXX"
+        )
+        return ASK_PHONE
+    else:
+        ctx.user_data["experience"] = update.message.text
+        vac_id = ctx.user_data.get("selected_vacancy", "")
+        if vac_id == "v3":
+            await update.message.reply_text(
+                "🚗 Есть ли у вас водительское удостоверение кат. B?",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("Да, кат. B", callback_data="lic_B")],
+                    [InlineKeyboardButton("B+C", callback_data="lic_BC")],
+                    [InlineKeyboardButton("Нет прав", callback_data="lic_none")],
+                ])
+            )
+            return ASK_LICENSE
+        else:
+            ctx.user_data["license"] = "Не требуется"
+            await update.message.reply_text(
+                "📞 Укажите ваш номер телефона в формате +7XXXXXXXXXX или 8XXXXXXXXXX"
+            )
+            return ASK_PHONE
 
 
 async def got_license(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     license_map = {
-        "lic_B": "B", "lic_C": "C", "lic_D": "D",
-        "lic_BC": "B+C", "lic_CE": "C+E", "lic_none": "Нет"
+        "lic_B": "B", "lic_BC": "B+C", "lic_none": "Нет"
     }
     ctx.user_data["license"] = license_map.get(query.data, "—")
     await query.edit_message_text(
@@ -252,12 +277,11 @@ async def got_call_time(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"📥 <b>Новая заявка</b>\n\n"
         f"👤 {user.full_name} (@{user.username or '—'})\n"
         f"🆔 ID: {user.id}\n\n"
-        f"🚚 Вакансия: {vac.get('title', vac_id)}\n"
+        f"📦 Вакансия: {vac.get('title', vac_id)}\n"
         f"📍 Город: {ctx.user_data.get('city', '—')}\n"
         f"🎂 Возраст: {ctx.user_data.get('age', '—')}\n"
         f"💼 Занятость: {ctx.user_data.get('employment', '—')}\n"
-        f"✈️ Командировки: {ctx.user_data.get('relocation', '—')}\n"
-        f"📋 Опыт: {ctx.user_data.get('experience', '—')}\n"
+        f"📋 Опыт / транспорт: {ctx.user_data.get('experience', '—')}\n"
         f"🚗 Права: {ctx.user_data.get('license', '—')}\n"
         f"📞 Телефон: {ctx.user_data.get('phone', '—')}\n"
         f"🕐 Удобное время: {ctx.user_data.get('call_time', '—')}"
@@ -300,7 +324,10 @@ def main():
             ASK_AGE:        [MessageHandler(filters.TEXT & ~filters.COMMAND, got_age)],
             ASK_EMPLOYMENT: [CallbackQueryHandler(got_employment, pattern="^emp_")],
             ASK_RELOCATION: [CallbackQueryHandler(got_relocation, pattern="^rel_")],
-            ASK_EXPERIENCE: [MessageHandler(filters.TEXT & ~filters.COMMAND, got_experience)],
+            ASK_EXPERIENCE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, got_experience),
+                CallbackQueryHandler(got_experience, pattern="^exp_"),
+            ],
             ASK_LICENSE:    [CallbackQueryHandler(got_license, pattern="^lic_")],
             ASK_PHONE:      [MessageHandler(filters.TEXT & ~filters.COMMAND, got_phone)],
             ASK_CALL_TIME:  [CallbackQueryHandler(got_call_time, pattern="^time_")],
