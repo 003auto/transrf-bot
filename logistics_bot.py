@@ -71,7 +71,7 @@ def main_keyboard():
 
 def vacancy_keyboard(vac_id):
     vac = VACANCIES[vac_id]
-    text = quote(f"Привет! Меня интересует вакансия {vac['title']}")
+    text = quote(f"Привет! Меня интересует вакансия {vac['title']}", safe="")
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("✉️ Написать HR", url=f"https://t.me/{HR_USERNAME}?text={text}")],
         [InlineKeyboardButton("← Все вакансии", callback_data="back")],
