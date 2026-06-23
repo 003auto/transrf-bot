@@ -296,6 +296,7 @@ async def got_call_time(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         "✅ Заявка принята!\n\n"
         "Наш HR-менеджер рассмотрит вашу кандидатуру и свяжется с вами "
         "в удобное для вас время (пн–пт, 9:00–18:00 МСК).\n\n"
+        "Если хотите написать напрямую: @transrf_hr\n\n"
         "Чтобы вернуться в меню — нажмите /start"
     )
     return ConversationHandler.END
