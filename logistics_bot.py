@@ -1,6 +1,7 @@
 import logging
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from urllib.parse import quote
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВИТИ_ТОКЕН")
@@ -70,7 +71,7 @@ def main_keyboard():
 
 def vacancy_keyboard(vac_id):
     vac = VACANCIES[vac_id]
-    text = f"Привет! Меня интересует вакансия «{vac['title']}»"
+    text = quote(f"Привет! Меня интересует вакансия {vac['title']}")
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("✉️ Написать HR", url=f"https://t.me/{HR_USERNAME}?text={text}")],
         [InlineKeyboardButton("← Все вакансии", callback_data="back")],
