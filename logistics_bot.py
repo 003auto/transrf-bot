@@ -5,7 +5,7 @@ from urllib.parse import quote
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВИТИ_ТОКЕН")
-HR_USERNAME = "transrf_hr"
+HR_USERNAME = "frodeeer"
 
 COMPANY_NAME = "ТрансРФ"
 COMPANY_ABOUT = (
@@ -71,7 +71,7 @@ def main_keyboard():
 
 def vacancy_keyboard(vac_id):
     vac = VACANCIES[vac_id]
-    text = quote(f"Привет! Меня интересует вакансия {vac['title']}", safe="")
+    text = quote("Привет! Хочу узнать подробнее о вакансии", safe="")
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("✉️ Написать HR", url=f"https://t.me/{HR_USERNAME}?text={text}")],
         [InlineKeyboardButton("← Все вакансии", callback_data="back")],
