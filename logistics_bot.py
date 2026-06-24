@@ -5,7 +5,7 @@ from urllib.parse import quote
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВИТИ_ТОКЕН")
-HR_USERNAME = "frodeeer"
+HR_USERNAME = "Vormilov"
 
 COMPANY_NAME = "ТрансРФ"
 COMPANY_ABOUT = (
