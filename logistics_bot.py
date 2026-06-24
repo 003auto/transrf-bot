@@ -107,6 +107,45 @@ VACANCIES = {
     },
 }
 
+QUIZ_QUESTIONS = [
+    {
+        "text": "Шаг 1 из 4\n\n<b>Укажите ваш возраст:</b>",
+        "key": "age",
+        "options": [
+            ("До 18 лет", "до 18"),
+            ("18–25 лет", "18–25"),
+            ("26–35 лет", "26–35"),
+            ("36–45 лет", "36–45"),
+            ("45+ лет", "45+"),
+        ]
+    },
+    {
+        "text": "Шаг 2 из 4\n\n<b>Есть ли у вас смартфон с навигацией?</b>",
+        "key": "smartphone",
+        "options": [
+            ("Да", "да"),
+            ("Нет", "нет"),
+        ]
+    },
+    {
+        "text": "Шаг 3 из 4\n\n<b>Вы работали курьером раньше?</b>",
+        "key": "experience",
+        "options": [
+            ("Да, есть опыт", "да"),
+            ("Нет, первый раз", "нет"),
+        ]
+    },
+    {
+        "text": "Шаг 4 из 4\n\n<b>Когда готовы приступить к работе?</b>",
+        "key": "start",
+        "options": [
+            ("Готов прямо сейчас", "сейчас"),
+            ("Через неделю", "через неделю"),
+            ("В течение месяца", "в течение месяца"),
+        ]
+    },
+]
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -124,12 +163,13 @@ def main_keyboard():
     )
 
 
-def vacancy_keyboard(vac_id):
-    text = quote("Привет! Хочу узнать подробнее о вакансии", safe="")
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("✉️ Написать HR", url=f"https://t.me/{HR_USERNAME}?text={text}")],
-        [InlineKeyboardButton("← Все вакансии", callback_data="back")],
-    ])
+def quiz_keyboard(vac_id, question_index):
+    question = QUIZ_QUESTIONS[question_index]
+    buttons = [
+        [InlineKeyboardButton(label, callback_data=f"quiz_{vac_id}_{question_index}_{value}")]
+        for label, value in question["options"]
+    ]
+    return InlineKeyboardMarkup(buttons)
 
 
 def back_keyboard():
@@ -138,8 +178,21 @@ def back_keyboard():
     ])
 
 
+def build_hr_message(vac_id, answers):
+    vac = VACANCIES[vac_id]
+    text = (
+        f"Привет! Хочу узнать подробнее о вакансии «{vac['title']}».\n\n"
+        f"Возраст: {answers.get('age', '—')}\n"
+        f"Смартфон с навигацией: {answers.get('smartphone', '—')}\n"
+        f"Опыт курьера: {answers.get('experience', '—')}\n"
+        f"Готов приступить: {answers.get('start', '—')}"
+    )
+    return quote(text, safe="")
+
+
 async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    ctx.user_data.clear()
     await update.message.reply_text(
         f"Здравствуйте, {user.first_name}! 👋\n\n"
         f"Вы обратились в HR-отдел компании <b>{COMPANY_NAME}</b>.\n\n"
@@ -154,40 +207,26 @@ async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 async def handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    data = query.data
 
-    if query.data == "about":
-        await query.edit_message_text(
-            COMPANY_ABOUT,
-            parse_mode="HTML",
-            reply_markup=back_keyboard()
-        )
+    if data == "about":
+        await query.edit_message_text(COMPANY_ABOUT, parse_mode="HTML", reply_markup=back_keyboard())
         return
 
-    if query.data == "how_to_start":
-        await query.edit_message_text(
-            HOW_TO_START,
-            parse_mode="HTML",
-            reply_markup=back_keyboard()
-        )
+    if data == "how_to_start":
+        await query.edit_message_text(HOW_TO_START, parse_mode="HTML", reply_markup=back_keyboard())
         return
 
-    if query.data == "faq":
-        await query.edit_message_text(
-            FAQ,
-            parse_mode="HTML",
-            reply_markup=back_keyboard()
-        )
+    if data == "faq":
+        await query.edit_message_text(FAQ, parse_mode="HTML", reply_markup=back_keyboard())
         return
 
-    if query.data == "cities":
-        await query.edit_message_text(
-            CITIES,
-            parse_mode="HTML",
-            reply_markup=back_keyboard()
-        )
+    if data == "cities":
+        await query.edit_message_text(CITIES, parse_mode="HTML", reply_markup=back_keyboard())
         return
 
-    if query.data == "back":
+    if data == "back":
+        ctx.user_data.clear()
         await query.edit_message_text(
             f"Актуальные вакансии <b>{COMPANY_NAME}</b>. Выберите интересующую:",
             parse_mode="HTML",
@@ -195,20 +234,63 @@ async def handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    vac = VACANCIES.get(query.data)
-    if not vac:
+    # Выбор вакансии — карточка + первый вопрос
+    if data in VACANCIES:
+        vac = VACANCIES[data]
+        ctx.user_data["vac_id"] = data
+        ctx.user_data["answers"] = {}
+        await query.edit_message_text(
+            f"{vac['icon']} <b>{vac['title']}</b>\n"
+            f"💰 {vac['salary']}  |  📍 {vac['location']}  |  🕐 {vac['schedule']}\n\n"
+            f"<b>Обязанности:</b>\n{vac['duties']}\n\n"
+            f"<b>Требования:</b>\n{vac['requirements']}\n\n"
+            f"<b>Условия:</b>\n{vac['conditions']}\n\n"
+            "—\n\n"
+            "Ответьте на 4 быстрых вопроса, чтобы мы могли подобрать для вас лучшие условия 👇\n\n"
+            + QUIZ_QUESTIONS[0]["text"],
+            parse_mode="HTML",
+            reply_markup=quiz_keyboard(data, 0)
+        )
         return
 
-    await query.edit_message_text(
-        f"{vac['icon']} <b>{vac['title']}</b>\n"
-        f"💰 {vac['salary']}  |  📍 {vac['location']}  |  🕐 {vac['schedule']}\n\n"
-        f"<b>Обязанности:</b>\n{vac['duties']}\n\n"
-        f"<b>Требования:</b>\n{vac['requirements']}\n\n"
-        f"<b>Условия:</b>\n{vac['conditions']}\n\n"
-        "Остались вопросы или хотите откликнуться? Напишите нашему HR-менеджеру 👇",
-        parse_mode="HTML",
-        reply_markup=vacancy_keyboard(query.data)
-    )
+    # Ответы на вопросы квиза
+    if data.startswith("quiz_"):
+        parts = data.split("_", 3)
+        _, vac_id, q_idx_str, answer = parts
+        q_idx = int(q_idx_str)
+
+        if "answers" not in ctx.user_data:
+            ctx.user_data["answers"] = {}
+
+        ctx.user_data["answers"][QUIZ_QUESTIONS[q_idx]["key"]] = answer
+        ctx.user_data["vac_id"] = vac_id
+
+        next_q = q_idx + 1
+
+        if next_q < len(QUIZ_QUESTIONS):
+            await query.edit_message_text(
+                QUIZ_QUESTIONS[next_q]["text"],
+                parse_mode="HTML",
+                reply_markup=quiz_keyboard(vac_id, next_q)
+            )
+            return
+
+        # Квиз завершён
+        vac = VACANCIES[vac_id]
+        hr_text = build_hr_message(vac_id, ctx.user_data["answers"])
+        await query.edit_message_text(
+            f"Отлично! 🎉\n\n"
+            f"Вы выбрали: <b>{vac['icon']} {vac['title']}</b>\n"
+            f"Заработок: <b>{vac['salary']}</b>\n\n"
+            "Ваши ответы сохранены. Остался один шаг — напишите нашему HR-менеджеру, "
+            "и он свяжется с вами в течение 15 минут 👇",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("✉️ Написать HR", url=f"https://t.me/{HR_USERNAME}?text={hr_text}")],
+                [InlineKeyboardButton("← Все вакансии", callback_data="back")],
+            ])
+        )
+        return
 
 
 def main():
