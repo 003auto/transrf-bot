@@ -8,6 +8,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВИТИ_ТОКЕН")
 HR_USERNAME = "transrf_hr"
 
 COMPANY_NAME = "ТрансРФ"
+
 COMPANY_ABOUT = (
     "<b>О компании ТрансРФ</b>\n\n"
     "ТрансРФ — федеральная курьерская служба с многолетней историей. "
@@ -22,6 +23,55 @@ COMPANY_ABOUT = (
     "• Официальное оформление с первого дня\n"
     "• Собственный транспорт компании для тех, у кого нет своего\n"
     "• Поддержка и обучение на старте — выходишь на маршрут уже через день"
+)
+
+HOW_TO_START = (
+    "<b>Как начать работу в ТрансРФ</b>\n\n"
+    "<b>Шаг 1 — Отклик</b>\n"
+    "Напишите нашему HR-менеджеру. Это займёт 2 минуты.\n\n"
+    "<b>Шаг 2 — Оформление</b>\n"
+    "Официальное трудоустройство с первого дня. "
+    "Никаких серых схем — только белая зарплата.\n\n"
+    "<b>Шаг 3 — Инструктаж</b>\n"
+    "Короткое обучение работе с приложением и маршрутами. "
+    "Занимает несколько часов.\n\n"
+    "<b>Шаг 4 — Первая смена</b>\n"
+    "Уже на следующий день выходишь на маршрут и начинаешь зарабатывать.\n\n"
+    "💰 Первая выплата — через 7 дней после начала работы."
+)
+
+FAQ = (
+    "<b>Частые вопросы</b>\n\n"
+    "<b>Нужен ли опыт?</b>\n"
+    "Нет. Мы обучаем всех с нуля. Главное — ответственность и смартфон.\n\n"
+    "<b>Как происходят выплаты?</b>\n"
+    "Каждую неделю на карту. Без задержек и серых схем.\n\n"
+    "<b>Можно ли выбирать смены?</b>\n"
+    "Да. Вы сами выбираете удобные дни и время через приложение.\n\n"
+    "<b>Нужен ли свой транспорт?</b>\n"
+    "Для пешего курьера — нет. Для авто/вело — можно использовать транспорт компании.\n\n"
+    "<b>Есть ли официальное оформление?</b>\n"
+    "Да, с первого рабочего дня. Трудовой договор, все отчисления.\n\n"
+    "<b>В каких городах есть работа?</b>\n"
+    "Москва, Санкт-Петербург, Екатеринбург, Новосибирск, Казань, Краснодар, "
+    "Нижний Новгород, Самара, Ростов-на-Дону, Уфа, Пермь, Воронеж и другие города России."
+)
+
+CITIES = (
+    "<b>Города присутствия ТрансРФ</b>\n\n"
+    "<b>Центральный федеральный округ:</b>\n"
+    "Москва, Воронеж, Тула, Рязань, Ярославль\n\n"
+    "<b>Северо-Западный:</b>\n"
+    "Санкт-Петербург, Калининград, Мурманск, Архангельск\n\n"
+    "<b>Приволжский:</b>\n"
+    "Нижний Новгород, Казань, Самара, Уфа, Пермь, Саратов\n\n"
+    "<b>Уральский:</b>\n"
+    "Екатеринбург, Челябинск, Тюмень\n\n"
+    "<b>Сибирский:</b>\n"
+    "Новосибирск, Омск, Красноярск, Иркутск\n\n"
+    "<b>Южный:</b>\n"
+    "Краснодар, Ростов-на-Дону, Волгоград\n\n"
+    "Не нашли свой город? Уточните у HR — список постоянно расширяется."
 )
 
 VACANCIES = {
@@ -65,16 +115,26 @@ def main_keyboard():
     return InlineKeyboardMarkup(
         [[InlineKeyboardButton(f"{v['icon']} {v['title']}", callback_data=k)]
          for k, v in VACANCIES.items()] +
-        [[InlineKeyboardButton("🏢 О компании", callback_data="about")]]
+        [
+            [InlineKeyboardButton("🏢 О компании", callback_data="about"),
+             InlineKeyboardButton("📍 Города", callback_data="cities")],
+            [InlineKeyboardButton("🚀 Как начать работу", callback_data="how_to_start")],
+            [InlineKeyboardButton("❓ Частые вопросы", callback_data="faq")],
+        ]
     )
 
 
 def vacancy_keyboard(vac_id):
-    vac = VACANCIES[vac_id]
     text = quote("Привет! Хочу узнать подробнее о вакансии", safe="")
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("✉️ Написать HR", url=f"https://t.me/{HR_USERNAME}?text={text}")],
         [InlineKeyboardButton("← Все вакансии", callback_data="back")],
+    ])
+
+
+def back_keyboard():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("← Все вакансии", callback_data="back")]
     ])
 
 
@@ -83,8 +143,9 @@ async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"Здравствуйте, {user.first_name}! 👋\n\n"
         f"Вы обратились в HR-отдел компании <b>{COMPANY_NAME}</b>.\n\n"
-        "Федеральная курьерская служба. Более 5 000 курьеров по всей России.\n\n"
-        "Выберите интересующую вакансию:",
+        "Федеральная курьерская служба.\n"
+        "Более 5 000 курьеров по всей России.\n\n"
+        "Выберите интересующую вакансию или узнайте подробнее о работе у нас:",
         parse_mode="HTML",
         reply_markup=main_keyboard()
     )
@@ -98,15 +159,37 @@ async def handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(
             COMPANY_ABOUT,
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("← Все вакансии", callback_data="back")]
-            ])
+            reply_markup=back_keyboard()
+        )
+        return
+
+    if query.data == "how_to_start":
+        await query.edit_message_text(
+            HOW_TO_START,
+            parse_mode="HTML",
+            reply_markup=back_keyboard()
+        )
+        return
+
+    if query.data == "faq":
+        await query.edit_message_text(
+            FAQ,
+            parse_mode="HTML",
+            reply_markup=back_keyboard()
+        )
+        return
+
+    if query.data == "cities":
+        await query.edit_message_text(
+            CITIES,
+            parse_mode="HTML",
+            reply_markup=back_keyboard()
         )
         return
 
     if query.data == "back":
         await query.edit_message_text(
-            "Актуальные вакансии <b>ТрансРФ</b>. Выберите интересующую:",
+            f"Актуальные вакансии <b>{COMPANY_NAME}</b>. Выберите интересующую:",
             parse_mode="HTML",
             reply_markup=main_keyboard()
         )
