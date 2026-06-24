@@ -1,11 +1,10 @@
 import logging
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from urllib.parse import quote
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВИТИ_ТОКЕН")
-HR_USERNAME = "transrf_hr"
+ADMIN_ID = 7831988668
 
 COMPANY_NAME = "ТрансРФ"
 
@@ -28,7 +27,7 @@ COMPANY_ABOUT = (
 HOW_TO_START = (
     "<b>Как начать работу в ТрансРФ</b>\n\n"
     "<b>Шаг 1 — Отклик</b>\n"
-    "Напишите нашему HR-менеджеру. Это займёт 2 минуты.\n\n"
+    "Оставьте заявку прямо в боте. Это займёт 2 минуты.\n\n"
     "<b>Шаг 2 — Оформление</b>\n"
     "Официальное трудоустройство с первого дня. "
     "Никаких серых схем — только белая зарплата.\n\n"
@@ -178,18 +177,6 @@ def back_keyboard():
     ])
 
 
-def build_hr_message(vac_id, answers):
-    vac = VACANCIES[vac_id]
-    text = (
-        f"Привет! Хочу узнать подробнее о вакансии «{vac['title']}».\n\n"
-        f"Возраст: {answers.get('age', '—')}\n"
-        f"Смартфон с навигацией: {answers.get('smartphone', '—')}\n"
-        f"Опыт курьера: {answers.get('experience', '—')}\n"
-        f"Готов приступить: {answers.get('start', '—')}"
-    )
-    return quote(text, safe="")
-
-
 async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     ctx.user_data.clear()
@@ -246,7 +233,7 @@ async def handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"<b>Требования:</b>\n{vac['requirements']}\n\n"
             f"<b>Условия:</b>\n{vac['conditions']}\n\n"
             "—\n\n"
-            "Ответьте на 4 быстрых вопроса, чтобы мы могли подобрать для вас лучшие условия 👇\n\n"
+            "Ответьте на 4 быстрых вопроса, и мы свяжемся с вами в течение 15 минут 👇\n\n"
             + QUIZ_QUESTIONS[0]["text"],
             parse_mode="HTML",
             reply_markup=quiz_keyboard(data, 0)
@@ -275,19 +262,41 @@ async def handle(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             )
             return
 
-        # Квиз завершён
+        # Квиз завершён — отправляем заявку админу
         vac = VACANCIES[vac_id]
-        hr_text = build_hr_message(vac_id, ctx.user_data["answers"])
+        answers = ctx.user_data["answers"]
+        user = query.from_user
+
+        username = f"@{user.username}" if user.username else "нет username"
+        full_name = user.full_name or "—"
+
+        admin_message = (
+            f"📋 <b>Новая заявка — {COMPANY_NAME}</b>\n\n"
+            f"👤 Имя: {full_name}\n"
+            f"🔗 Username: {username}\n"
+            f"🆔 ID: <code>{user.id}</code>\n\n"
+            f"💼 Вакансия: {vac['icon']} {vac['title']}\n"
+            f"📅 Возраст: {answers.get('age', '—')}\n"
+            f"📱 Смартфон с навигацией: {answers.get('smartphone', '—')}\n"
+            f"🚴 Опыт курьера: {answers.get('experience', '—')}\n"
+            f"⏰ Готов приступить: {answers.get('start', '—')}"
+        )
+
+        await query.get_bot().send_message(
+            chat_id=ADMIN_ID,
+            text=admin_message,
+            parse_mode="HTML"
+        )
+
+        # Сообщение пользователю
         await query.edit_message_text(
-            f"Отлично! 🎉\n\n"
-            f"Вы выбрали: <b>{vac['icon']} {vac['title']}</b>\n"
-            f"Заработок: <b>{vac['salary']}</b>\n\n"
-            "Ваши ответы сохранены. Остался один шаг — напишите нашему HR-менеджеру, "
-            "и он свяжется с вами в течение 15 минут 👇",
+            "✅ <b>Заявка принята!</b>\n\n"
+            f"Вы откликнулись на вакансию: <b>{vac['icon']} {vac['title']}</b>\n\n"
+            "Наш HR-менеджер свяжется с вами в течение 15 минут.\n\n"
+            "Ожидайте сообщения в Telegram 📲",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("✉️ Написать HR", url=f"https://t.me/{HR_USERNAME}?text={hr_text}")],
-                [InlineKeyboardButton("← Все вакансии", callback_data="back")],
+                [InlineKeyboardButton("← На главную", callback_data="back")]
             ])
         )
         return
